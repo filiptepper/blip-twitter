@@ -1,18 +1,11 @@
 require "rubygems"
 require "sinatra"
 
-$:.unshift "vendor/gems/crack-0.1.4/lib/"
-require "vendor/gems/crack-0.1.4/lib/crack"
-
 $:.unshift "vendor/gems/httparty-0.5.0/lib/"
 require "vendor/gems/httparty-0.5.0/lib/httparty"
 
 $:.unshift "vendor/gems/bliptwitt-0.0.3/lib/"
 require "vendor/gems/bliptwitt-0.0.3/lib/bliptwitt"
-
-$:.unshift "vendor/gems/yajl-ruby-0.6.7/lib/"
-require "vendor/gems/yajl-ruby-0.6.7/lib/yajl"
-require "vendor/gems/yajl-ruby-0.6.7/lib/yajl/json_gem"
 
 set :port, 80
 
