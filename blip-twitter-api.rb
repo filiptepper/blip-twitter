@@ -41,6 +41,26 @@ before do
   @blip = Blip.new(@basic_auth.credentials[0], @basic_auth.credentials[1]) if @basic_auth.provided? && @basic_auth.basic? && @basic_auth.credentials
 end
 
+get "/" do
+  %Q{
+    <html>
+    <head>
+    <title>Z Blipowego na Twitterowy</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    </head>
+    <body>
+    <pre>
+    Ta wyrafinowa aplikacja tłumaczy z Blipowego na Twitterowy.
+    
+    Testowane z Twitterrific, Spaz i Termtter.
+    
+    Se podaj http://blip-twitter.heroku.com/ jako URL.
+    </pre>
+    </body>
+    </html>
+  }
+end
+
 post "/statuses/update.json" do
   status = params["status"]
   status = status.gsub(/^@@/, ">>").gsub(/^@/, ">")
