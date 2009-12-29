@@ -1,6 +1,7 @@
 require "rubygems"
 require "sinatra"
 require "httparty"
+require "bliptwitt"
 require "yajl"
 require "yajl/json_gem"
 
@@ -35,56 +36,27 @@ before do
   @blip = Blip.new(@basic_auth.credentials[0], @basic_auth.credentials[1]) if @basic_auth.provided? && @basic_auth.basic? && @basic_auth.credentials
 end
 
-helpers do
-  def update(message)
-    {
-       "geo" => nil,
-       "source" => "web",
-       "truncated" => false,
-       "favorited" => false, 
-       "user" => 
-       {
-         "profile_background_image_url" => "",
-         "description" => "",
-         "verified" => false,
-         "profile_link_color" => "",
-         "profile_background_tile" => false,
-         "profile_background_color" => "",
-         "following" => false,
-         "profile_sidebar_fill_color" => "",
-         "followers_count" => 0,
-         "statuses_count" => 0,
-         "time_zone" => "Warsaw",
-         "profile_sidebar_border_color" => "",
-         "protected" => false,
-         "url" => "",
-         "friends_count" => 0,
-         "profile_image_url" => "http://blip.pl#{message["user"]["avatar"]["url_30"]}",
-         "location" => "",
-         "name" => "#{message["user"]["login"]}", 
-         "id" => message["user"]["id"],
-         "geo_enabled" => false,
-         "notifications"=> false,
-         "utc_offset" => 3600,
-         "favourites_count" => 13,
-         "created_at" => "#{Time.parse(message["created_at"]).utc}",
-         "profile_text_color" => "",
-         "screen_name" => "#{message["user"]["login"]}"
-        },
-        "in_reply_to_user_id" => nil,
-        "in_reply_to_status_id" => nil,
-        "in_reply_to_screen_name"=> nil,
-        "id" => message["id"],
-        "text" => message["recipient"].nil? ? "#{message["body"]}" : "@#{message["recipient"]["login"]} #{message["body"]}",
-        "created_at" => "#{Time.parse(message["created_at"]).utc}"
-      }
+post "/statuses/update.json" do
+  status = params["status"]
+  status = status.gsub(/^@@/, ">>").gsub(/^@/, ">")
+  
+  posted = @blip.write("/updates", { :update => { :body => status } } )
+  
+  if status =~ /^>>/
+    message = @blip.fetch("/private_messages/#{posted["id"]}?include=user,user[avatar],user[background],recipient")
+  else
+    message = @blip.fetch("/updates/#{posted["id"]}?include=user,user[avatar],user[background],recipient")
   end
+  BlipTwitt.status(message).to_json
 end
 
-post "/statuses/update.json" do
-  posted = @blip.write("/updates", { :update => { :body => params["status"] } } )
-  message = @blip.fetch("/updates/#{posted["id"]}?include=user,user[avatar],user[background],recipient")
-  update(message).to_json
+post "/direct_messages/new.json" do
+  status = ">>#{params["user"]} #{params["text"]}"
+  
+  posted = @blip.write("/updates", { :update => { :body => status } } )
+  
+  message = @blip.fetch("/private_messages/#{posted["id"]}?include=user,user[avatar],user[background],recipient")
+  BlipTwitt.status(message).to_json
 end
 
 get "/statuses/replies.json" do
@@ -93,7 +65,7 @@ get "/statuses/replies.json" do
   timeline = []
   
   directed_messages.each do |message|
-    timeline << update(message)
+    timeline << BlipTwitt.status(message)
   end
   
   timeline.to_json
@@ -105,7 +77,7 @@ get "/direct_messages.json" do
   timeline = []
   
   private_messages.each do |message|
-    timeline << update(message)
+    timeline << BlipTwitt.status(message)
   end
   
   timeline.to_json
@@ -115,16 +87,22 @@ get "/favorites.json" do
   "[]"
 end
 
-get "/statuses/home_timeline.json" do
-   dashboard = @blip.fetch("/dashboard?include=user,user[avatar],user[background],recipient")
+get %r{/statuses/(home|friends)_timeline.json} do
+  if params[:since_id]
+    dashboard = @blip.fetch("/dashboard/since/#{params[:since_id]}?include=user,user[avatar],user[background],recipient")
+  else
+    dashboard = @blip.fetch("/dashboard?include=user,user[avatar],user[background],recipient")
+  end
+  
+  p dashboard
+  
+  timeline = []
    
-   timeline = []
+  dashboard.each do |message|
+    timeline << BlipTwitt.status(message)
+  end
    
-   dashboard.each do |message|
-     timeline << update(message)
-   end
-   
-   timeline.to_json
+  timeline.to_json
 end
 
 get "/account/rate_limit_status.json" do
@@ -141,49 +119,13 @@ get "/account/rate_limit_status.json" do
 end
 
 get "/account/verify_credentials.json" do
-  profile = @blip.fetch("/profile?include=background,avatar,current_status")
-  json = %Q{
-    {
-      "statuses_count": 0,
-      "profile_background_image_url": "#{profile["background"]["url"]}",
-      "description": "",
-      "friends_count":0,
-      "profile_link_color": "",
-      "status":
-      {
-        "source": "#{profile["current_status"]["transport"]["name"]}",
-        "truncated":false,
-        "favorited":false,
-        "in_reply_to_user_id":0,
-        "in_reply_to_status_id":0,
-        "in_reply_to_screen_name":0,
-        "id": #{profile["current_status"]["id"]},
-        "text":"#{profile["current_status"]["body"]}",
-        "created_at":"#{Time.parse(profile["current_status"]["created_at"]).utc}"
-      },
-      "profile_background_tile":false,
-      "notifications":false,
-      "favourites_count":0,
-      "profile_background_color":"",
-      "following":false,
-      "verified":false,
-      "profile_sidebar_fill_color":"",
-      "time_zone":"Warsaw",
-      "profile_sidebar_border_color":"",
-      "protected":false,
-      "url":"",
-      "profile_image_url": "http://blip.pl#{profile["avatar"]["url_30"]}",
-      "location":"",
-      "name":"#{profile["login"]}",
-      "id":#{profile["id"]},
-      "geo_enabled":false,
-      "utc_offset":3600,
-      "created_at": "Tue Mar 27 18:41:23 +0000 2007",
-      "profile_text_color":"",
-      "followers_count": 0,
-      "screen_name":"#{profile["login"]}"
-    }
-  }
+  BlipTwitt.user(@blip.fetch("/profile?include=background,avatar,current_status")).to_json
+end
 
-  json
+get "/users/show/:login.json" do
+  BlipTwitt.user(@blip.fetch("/users/#{params[:login]}?include=background,avatar,current_status")).to_json
+end
+
+get "/statuses/show/:id.json" do
+  BlipTwitt.status(@blip.fetch("/updates/#{params[:id]}?include=user,user[avatar],recipient")).to_json
 end
