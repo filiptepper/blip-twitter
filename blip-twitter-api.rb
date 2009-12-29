@@ -7,6 +7,9 @@ require "vendor/gems/httparty-0.5.0/lib/httparty"
 $:.unshift "vendor/gems/bliptwitt-0.0.3/lib/"
 require "vendor/gems/bliptwitt-0.0.3/lib/bliptwitt"
 
+require "yajl"
+require "yajl/json_gem"
+
 set :port, 80
 
 class Blip
