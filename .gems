@@ -1,1 +1,2 @@
 crack --version ">= 0.1.4"
+yajl-ruby --version ">= 0.6.7"
