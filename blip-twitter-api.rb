@@ -1,9 +1,10 @@
 require "rubygems"
 require "sinatra"
 require "httparty"
-require "bliptwitt"
-require "yajl"
-require "yajl/json_gem"
+require "vendor/gems/httparty-0.5.0/lib/httparty"
+require "vendor/gems/bliptwitt-0.0.3/lib/bliptwitt"
+require "vendor/gems/yajl-ruby-0.6.7/lib/yajl"
+require "vendor/gems/yajl-ruby-0.6.7/lib/yajl/json_gem"
 
 set :port, 80
 
