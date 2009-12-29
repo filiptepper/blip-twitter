@@ -1,5 +1,6 @@
 require "rubygems"
 require "sinatra"
+require "vendor/gems/crack-0.1.4/lib/crack"
 require "vendor/gems/httparty-0.5.0/lib/httparty"
 require "vendor/gems/bliptwitt-0.0.3/lib/bliptwitt"
 require "vendor/gems/yajl-ruby-0.6.7/lib/yajl"
