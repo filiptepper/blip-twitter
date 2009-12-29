@@ -1,5 +1,8 @@
 require "rubygems"
 require "sinatra"
+
+Dir["vendor/gems/*/lib"].each { |path| $:.unshift path } 
+
 require "vendor/gems/crack-0.1.4/lib/crack"
 require "vendor/gems/httparty-0.5.0/lib/httparty"
 require "vendor/gems/bliptwitt-0.0.3/lib/bliptwitt"
