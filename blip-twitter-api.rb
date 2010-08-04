@@ -15,7 +15,7 @@ set :port, 80
 class Blip
   include HTTParty
   base_uri "api.blip.pl"
-  
+
   def initialize(username, password)
     @auth = { :username => username, :password => password }
     @headers = {
@@ -24,12 +24,12 @@ class Blip
       "Accept" => "application/json"
     }
   end
-  
+
   def fetch(url)
     options = { :basic_auth => @auth, :headers => @headers }
     self.class.get(url, options)
   end
-  
+
   def write(url, body)
     options = { :basic_auth => @auth, :headers => @headers, :body => body}
     self.class.post(url, options)
@@ -51,9 +51,9 @@ get "/" do
     <body>
     <pre>
     Ta wyrafinowa aplikacja tłumaczy z Blipowego na Twitterowy.
-    
+
     Testowane z Twitterrific, Spaz i Termtter.
-    
+
     Se podaj http://blip-twitter.heroku.com/ jako URL.
     </pre>
     </body>
@@ -64,9 +64,9 @@ end
 post "/statuses/update.json" do
   status = params["status"]
   status = status.gsub(/^@@/, ">>").gsub(/^@/, ">")
-  
+
   posted = @blip.write("/updates", { :update => { :body => status } } )
-  
+
   if status =~ /^>>/
     message = @blip.fetch("/private_messages/#{posted["id"]}?include=user,user[avatar],user[background],recipient")
   else
@@ -77,34 +77,34 @@ end
 
 post "/direct_messages/new.json" do
   status = ">>#{params["user"]} #{params["text"]}"
-  
+
   posted = @blip.write("/updates", { :update => { :body => status } } )
-  
+
   message = @blip.fetch("/private_messages/#{posted["id"]}?include=user,user[avatar],user[background],recipient")
   BlipTwitt.status(message).to_json
 end
 
 get "/statuses/replies.json" do
   directed_messages = @blip.fetch("/directed_messages?include=user,user[avatar],user[background],recipient")
-  
+
   timeline = []
-  
+
   directed_messages.each do |message|
     timeline << BlipTwitt.status(message)
   end
-  
+
   timeline.to_json
 end
 
 get "/direct_messages.json" do
   private_messages = @blip.fetch("/private_messages?include=user,user[avatar],user[background],recipient")
-  
+
   timeline = []
-  
+
   private_messages.each do |message|
     timeline << BlipTwitt.status(message)
   end
-  
+
   timeline.to_json
 end
 
@@ -118,28 +118,26 @@ get %r{/statuses/(home|friends)_timeline.json} do
   else
     dashboard = @blip.fetch("/dashboard?include=user,user[avatar],user[background],recipient")
   end
-  
-  p dashboard
-  
+
   timeline = []
-   
+
   dashboard.each do |message|
     timeline << BlipTwitt.status(message)
   end
-   
+
   timeline.to_json
 end
 
 get "/account/rate_limit_status.json" do
   time = Time.now
-  
+
   rate = {
     "remaining_hits" => 999,
     "hourly_limit" => 999,
     "reset_time" => time.utc,
     "reset_time_in_seconds" => time.strftime("%y%m%d%H%M%S")
   }
-  
+
   rate.to_json
 end
 
